@@ -6,7 +6,7 @@ const app = express();
 
 const pool = new Pool({
     user: "raj",
-    host: "localhost",       
+    host: "localhost",
     database: "crud",
     password: "",
     port: 5432
@@ -14,36 +14,52 @@ const pool = new Pool({
 
 app.use(express.json());
 
-pool.connect()
-    .then(() => console.log("Database connected"))
-    .catch(err => console.log(err));
-
+/* Create table */
 app.get("/create", async (req, res) => {
-    const create = `
-        CREATE TABLE IF NOT EXISTS students (
-            id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL,
-            reg_no INT NOT NULL
-        )
-    `;
-    await pool.query(create);
-    res.send("Table created");
+    try {
+        const query = `
+            CREATE TABLE IF NOT EXISTS students (
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL,
+                reg_no INT NOT NULL
+            )
+        `;
+        await pool.query(query);
+        res.send("Table created");
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
 });
 
+/* Insert row */
 app.get("/add", async (req, res) => {
-    const { name, reg_no } = req.query;
+    try {
+        const { name, reg_no } = req.query;
 
-    const add = `
-        INSERT INTO students (name, reg_no)
-        VALUES ($1, $2)
-    `;
-    await pool.query(add, [name, reg_no]);
-    res.send("Row inserted");
+        if (!name || !reg_no) {
+            return res.status(400).send("name and reg_no are required");
+        }
+
+        const query = `
+            INSERT INTO students (name, reg_no)
+            VALUES ($1, $2)
+        `;
+        await pool.query(query, [name, reg_no]);
+
+        res.send("Row inserted");
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
 });
 
+/* Fetch all rows */
 app.get("/", async (req, res) => {
-    const result = await pool.query("SELECT * FROM students");
-    res.json(result.rows);
+    try {
+        const result = await pool.query("SELECT * FROM students");
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
 });
 
 app.listen(3000, () => {
